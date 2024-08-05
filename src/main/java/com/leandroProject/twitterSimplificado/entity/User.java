@@ -1,7 +1,9 @@
 package com.leandroProject.twitterSimplificado.entity;
 
+import com.leandroProject.twitterSimplificado.controller.dto.LoginRequest;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Set;
 import java.util.UUID;
@@ -27,4 +29,9 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "roles_id")
     )
     private Set<Role> roles;
+
+
+    public boolean isLoginCorrect(LoginRequest loginRequest, PasswordEncoder passwordEncoder){
+        return passwordEncoder.matches(loginRequest.password() , this.password);
+    }
 }
