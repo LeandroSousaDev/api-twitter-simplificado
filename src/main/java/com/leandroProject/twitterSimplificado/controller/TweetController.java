@@ -13,6 +13,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,7 +30,7 @@ public class TweetController {
 
     @PostMapping("/tweet")
     public ResponseEntity<Void> createTweet(@RequestBody CreateTweetDto createTweetDto,
-                                            JwtAuthenticationToken jwtAuthenticationToken) {
+            JwtAuthenticationToken jwtAuthenticationToken) {
 
         var user = userRepository.findById(UUID.fromString(jwtAuthenticationToken.getName()));
 
@@ -43,7 +45,7 @@ public class TweetController {
 
     @DeleteMapping("/tweet/{id}")
     public ResponseEntity<Void> deleteTweet(@PathVariable("id") Long tweetId,
-                                            JwtAuthenticationToken jwtAuthenticationToken) {
+            JwtAuthenticationToken jwtAuthenticationToken) {
 
         var user = userRepository.findById(UUID.fromString(jwtAuthenticationToken.getName()));
         var tweet = tweetRepository.findById(tweetId)
@@ -53,7 +55,7 @@ public class TweetController {
                 .stream()
                 .anyMatch(role -> role.getName().equalsIgnoreCase(Role.values.ADMIN.name()));
 
-        if(isAdmin || tweet.getUser().getUserId().equals(UUID.fromString(jwtAuthenticationToken.getName()))) {
+        if (isAdmin || tweet.getUser().getUserId().equals(UUID.fromString(jwtAuthenticationToken.getName()))) {
             tweetRepository.deleteById(tweetId);
         } else {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -69,9 +71,28 @@ public class TweetController {
                 .map(tweet -> new FeedItemDto(
                         tweet.getTweetId(),
                         tweet.getContent(),
-                        tweet.getUser().getUsername()
-                )).toList();
+                        tweet.getUser().getUsername()))
+                .toList();
 
         return ResponseEntity.ok(new FeedDto(tweets));
+    }
+
+    @GetMapping("/myFeed")
+    public ResponseEntity<FeedDto> myFeed(JwtAuthenticationToken jwtAuthenticationToken) {
+        var tweets = tweetRepository.findAll();
+
+        List<FeedItemDto> tweetList = new ArrayList<>();
+
+        for( Tweet tweet : tweets) {
+            if(tweet.getUser().getUserId().equals(UUID.fromString(jwtAuthenticationToken.getName()))) {
+                tweetList.add(new FeedItemDto(
+                        tweet.getTweetId(),
+                        tweet.getContent(),
+                        tweet.getUser().getUsername()
+                ));
+            }
+        }
+
+        return ResponseEntity.ok(new FeedDto(tweetList));
     }
 }
